@@ -43,6 +43,7 @@ module Pbs::Event::Course
     ### CALLBACKS
     after_initialize :become_campy
     before_save :set_requires_approval
+    after_save :request_missing_approvals
   end
 
 
@@ -74,6 +75,14 @@ module Pbs::Event::Course
       requires_approval_bund?
 
     true
+  end
+
+  def request_missing_approvals
+    if APPROVALS.any? { |approval_attr| saved_changes_to_attr? approval_attr.to_sym }
+      participations.each do |participation|
+        Event::Approver.new(participation).request_approvals
+      end
+    end
   end
 
   def assert_bsv_days_precision
